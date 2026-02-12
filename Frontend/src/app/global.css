@@ -1,16 +1,129 @@
+/* ==========================================================================
+   1. Tailwind Directives (the most important part)
+   ========================================================================== */
+
+/* If using Tailwind v4+ with the new import method (recommended 2025+) */
+@import "tailwindcss";
+
+/* If still on Tailwind v3 style (very common in many templates) — use this instead: */
+/*
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+*/
 
-/* Optional: basic reset or global styles */
+/* ==========================================================================
+   2. CSS Variables – modern color system (OKLCH or HSL)
+   Good contrast, easy dark mode
+   ========================================================================== */
+:root {
+  --background: oklch(99% 0.01 240);     /* almost white – soft */
+  --foreground: oklch(20% 0.05 260);     /* dark gray-blue */
+
+  --primary:   oklch(65% 0.25 280);      /* nice purple-blue for buttons/links */
+  --primary-soft: oklch(92% 0.08 280);
+  --accent:    oklch(72% 0.22 40);       /* warm gold/orange for highlights */
+
+  --muted:     oklch(60% 0.04 240);
+  --muted-soft: oklch(96% 0.01 240);
+
+  --border:    oklch(88% 0.02 240);
+  --input:     oklch(94% 0.01 240);
+  --ring:      oklch(65% 0.25 280 / 0.4);
+
+  --radius:    0.75rem;                  /* smooth modern radius */
+}
+
+.dark {
+  --background: oklch(18% 0.04 260);
+  --foreground: oklch(96% 0.02 260);
+
+  --primary:    oklch(72% 0.22 275);
+  --primary-soft: oklch(28% 0.08 275);
+  --accent:     oklch(78% 0.20 45);
+
+  --muted:      oklch(40% 0.03 260);
+  --muted-soft: oklch(24% 0.02 260);
+
+  --border:     oklch(30% 0.03 260);
+  --input:      oklch(26% 0.02 260);
+  --ring:       oklch(72% 0.22 275 / 0.5);
+}
+
+/* ==========================================================================
+   3. Very minimal CSS reset / base styles
+   (Tailwind already does most of this when you use @tailwind base)
+   ========================================================================== */
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
 body {
-  font-family: system-ui, -apple-system, sans-serif;
-  background: #f9fafb;
-  color: #111827;
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: system-ui, -apple-system, BlinkMacOSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", sans-serif;
+  line-height: 1.5;
+  min-height: 100dvh;
+}
+
+/* ==========================================================================
+   4. Common global utilities / fixes
+   ========================================================================== */
+
+/* Remove blue tap highlight on mobile */
+button, a, [role="button"] {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Better links */
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Images / media */
+img, picture, video, canvas, svg {
+  display: block;
+  max-width: 100%;
+}
+
+/* Lists */
+ul, ol {
+  list-style: none;
+}
+
+/* Focus ring – accessible & modern */
+:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--ring);
+}
+
+/* ==========================================================================
+   5. Optional: Custom components / shadcn-like base classes
+   (you can move these to @layer components if using Tailwind v3)
+   ========================================================================== */
+
+@layer base {
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+    line-height: 1.1;
+  }
+
+  h1 { font-size: clamp(2rem, 5vw, 3.5rem); }
+  h2 { font-size: clamp(1.6rem, 4vw, 2.5rem); }
+}
+
+/* ==========================================================================
+   6. Dark mode forced class (useful for testing)
+   ========================================================================== */
+.force-dark {
+  color-scheme: dark;
 }
