@@ -28,7 +28,7 @@ Add these (Production + Preview if you want):
 
 | Key | Value |
 |-----|--------|
-| `NEXT_PUBLIC_API_URL` | *Your Railway public URL from **Generate Domain** (e.g. `https://wishlist-ai-production-xxxx.up.railway.app`)* |
+| `NEXT_PUBLIC_API_URL` | `https://wishlist-ai-production.up.railway.app` |
 | `NEXT_PUBLIC_SITE_URL` | `https://YOUR_VERCEL_APP.vercel.app` *(replace with your real Vercel app URL)* |
 
 Then **Redeploy** (Deployments → ⋯ → Redeploy).
