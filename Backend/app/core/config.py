@@ -33,6 +33,9 @@ class Settings(BaseSettings):
     github_client_id: str | None = None
     github_client_secret: str | None = None
 
+    # Pushover (push notifications to wishlist owner)
+    pushover_app_token: str | None = None
+
     @property
     def cors_origins_list(self) -> List[str]:
         origins = [o.strip() for o in self.cors_origins.split(",") if o.strip()]

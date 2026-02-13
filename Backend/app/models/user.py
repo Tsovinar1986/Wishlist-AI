@@ -22,6 +22,7 @@ class User(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
+    pushover_user_key: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
     wishlists: Mapped[list["Wishlist"]] = relationship(
         "Wishlist", back_populates="owner", lazy="selectin"
