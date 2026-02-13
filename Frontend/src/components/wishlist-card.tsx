@@ -40,6 +40,8 @@ export function WishlistCard({
       setCopied(true);
       toast.success("Ссылка скопирована");
       setTimeout(() => setCopied(false), 2000);
+    }).catch(() => {
+      toast.error("Не удалось скопировать");
     });
   };
 
@@ -47,16 +49,17 @@ export function WishlistCard({
     <Link href={`/dashboard/wishlists/${id}`} className="block h-full">
       <Card className="h-full transition-colors hover:border-[var(--primary)]">
         <CardHeader className="pb-2">
-          <CardTitle className="text-base">{title}</CardTitle>
-          {description && (
+          <CardTitle className="text-base line-clamp-2 break-words">{title || "Без названия"}</CardTitle>
+          {description && String(description).trim() && (
             <CardDescription className="line-clamp-2">
               {description}
             </CardDescription>
           )}
           <p className="text-xs text-[var(--muted)]">
-            {items_count === 0
-              ? "Нет подарков"
-              : `${items_count} ${items_count === 1 ? "подарок" : items_count < 5 ? "подарка" : "подарков"}`}
+            {(() => {
+              const n = Math.max(0, Math.floor(Number(items_count) || 0));
+              return n === 0 ? "Нет подарков" : `${n} ${n === 1 ? "подарок" : n < 5 ? "подарка" : "подарков"}`;
+            })()}
           </p>
         </CardHeader>
         <CardContent className="pt-0">

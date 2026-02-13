@@ -25,26 +25,41 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail || !password) {
+      toast.error("Введите email и пароль");
+      return;
+    }
+    if (password.length < 6) {
+      toast.error("Пароль должен быть не короче 6 символов");
+      return;
+    }
     setLoading(true);
     try {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email,
+          email: trimmedEmail,
           password,
-          name: name || email.split("@")[0],
+          name: (name || "").trim() || trimmedEmail.split("@")[0],
         }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        toast.error((data as { error?: string }).error || "Registration failed");
+        const msg =
+          typeof (data as { detail }).detail === "string"
+            ? (data as { detail: string }).detail
+            : Array.isArray((data as { detail?: string[] }).detail)
+              ? (data as { detail: string[] }).detail[0]
+              : (data as { error?: string }).error;
+        toast.error(msg || "Ошибка регистрации");
         return;
       }
-      toast.success("Account created! Welcome.");
+      toast.success("Аккаунт создан. Добро пожаловать!");
       router.push("/dashboard");
     } catch {
-      toast.error("Something went wrong. Try again.");
+      toast.error("Ошибка подключения. Попробуйте снова.");
     } finally {
       setLoading(false);
     }
@@ -83,7 +98,7 @@ export default function RegisterPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">Пароль (не короче 6 символов)</Label>
               <Input
                 id="password"
                 type="password"
@@ -91,6 +106,7 @@ export default function RegisterPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                minLength={6}
                 autoComplete="new-password"
               />
             </div>

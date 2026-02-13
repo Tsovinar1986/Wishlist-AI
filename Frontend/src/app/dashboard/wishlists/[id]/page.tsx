@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
+import { toast } from "sonner";
 import type { Wishlist, Item } from "@/lib/api";
 import { subscribeWishlist } from "@/lib/ws-client";
 
@@ -32,15 +33,18 @@ export default function WishlistEditPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const load = useCallback(() => {
+    if (!id) return;
     Promise.all([
       api<Wishlist>(`/api/wishlists/${id}`),
       api<Item[]>(`/api/wishlists/${id}/items`),
     ])
       .then(([w, list]) => {
         setWishlist(w);
-        setItems(list);
+        setItems(Array.isArray(list) ? list : []);
       })
-      .catch(() => router.replace("/dashboard"))
+      .catch(() => {
+        router.replace("/dashboard");
+      })
       .finally(() => setLoading(false));
   }, [id, router]);
 
@@ -63,23 +67,25 @@ export default function WishlistEditPage() {
     const url = `${typeof window !== "undefined" ? window.location.origin : ""}/w/${wishlist.public_slug}`;
     navigator.clipboard.writeText(url).then(() => {
       setCopied(true);
+      toast.success("Ссылка скопирована");
       setTimeout(() => setCopied(false), 2000);
-    });
+    }).catch(() => toast.error("Не удалось скопировать"));
   };
 
   const addItem = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle.trim()) return;
+    const priceParsed = newPrice.trim() ? parseFloat(newPrice.replace(",", ".").replace(/\s/g, "")) : NaN;
+    const price = Number.isFinite(priceParsed) ? priceParsed : null;
     setSubmitting(true);
     try {
-      const price = newPrice.trim() ? parseFloat(newPrice.replace(",", ".")) : null;
       const item = await api<Item>(`/api/wishlists/${id}/items`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           wishlist_id: id,
           title: newTitle.trim(),
-          price: price ?? null,
+          price,
           product_url: newUrl.trim() || null,
           image_url: newImage.trim() || null,
           allow_contributions: true,
@@ -91,15 +97,21 @@ export default function WishlistEditPage() {
       setNewUrl("");
       setNewImage("");
       setAddOpen(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Не удалось добавить подарок");
     } finally {
       setSubmitting(false);
     }
   };
 
   const deleteItem = async (itemId: string) => {
-    if (!confirm("Remove this item from the list?")) return;
-    await api(`/api/wishlists/${id}/items/${itemId}`, { method: "DELETE" });
-    setItems((prev) => prev.filter((i) => i.id !== itemId));
+    if (!confirm("Удалить этот подарок из списка?")) return;
+    try {
+      await api(`/api/wishlists/${id}/items/${itemId}`, { method: "DELETE" });
+      setItems((prev) => prev.filter((i) => i.id !== itemId));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Не удалось удалить");
+    }
   };
 
   if (loading || !wishlist) {

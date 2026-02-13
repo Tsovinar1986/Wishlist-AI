@@ -19,29 +19,41 @@ import {
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const from = searchParams.get("from") || "/dashboard";
+  const rawFrom = searchParams.get("from") || "/dashboard";
+  const from = rawFrom.startsWith("/") && !rawFrom.startsWith("//") ? rawFrom : "/dashboard";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail || !password) {
+      toast.error("Введите email и пароль");
+      return;
+    }
     setLoading(true);
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email: trimmedEmail, password }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        toast.error((data as { error?: string }).error || "Login failed");
+        const msg =
+          typeof (data as { detail }).detail === "string"
+            ? (data as { detail: string }).detail
+            : Array.isArray((data as { detail?: string[] }).detail)
+              ? (data as { detail: string[] }).detail[0]
+              : (data as { error?: string }).error;
+        toast.error(msg || "Неверный email или пароль");
         return;
       }
-      toast.success("Welcome back!");
-      router.push(from);
+      toast.success("Добро пожаловать!");
+      router.push(from.startsWith("/") ? from : "/dashboard");
     } catch {
-      toast.error("Something went wrong. Try again.");
+      toast.error("Ошибка подключения. Попробуйте снова.");
     } finally {
       setLoading(false);
     }

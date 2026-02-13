@@ -36,7 +36,9 @@ export function CreateWishlistForm({
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        toast.error((data as { detail?: string }).detail || "Failed to create");
+        const raw = (data as { detail?: string | string[] }).detail;
+        const msg = typeof raw === "string" ? raw : Array.isArray(raw) ? raw[0] : (data as { error?: string }).error;
+        toast.error(msg || "Не удалось создать список");
         return;
       }
       const id = (data as { id?: string }).id;
