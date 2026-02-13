@@ -6,17 +6,30 @@
 # Python
 __pycache__/
 *.py[cod]
+*.pyo
 .venv/
 venv/
+*.egg-info/
 
-# Node
+# Node – never commit (too large for GitHub)
 node_modules/
 .next/
 out/
+npm-debug.log*
+.yarn/
+.pnpm-store/
+
+# Build and cache
+*.log
+.cache/
+dist/
+build/
 
 # OS
 .DS_Store
+Thumbs.db
 
 # IDE
 .idea/
 .vscode/
+*.swp
