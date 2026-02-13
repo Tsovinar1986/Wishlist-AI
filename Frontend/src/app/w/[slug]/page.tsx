@@ -23,24 +23,32 @@ export default function PublicWishlistPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const applyWsUpdate = useCallback((itemId: string, reservedTotal: number, contributorsCount: number) => {
+    const safeTotal = Number(reservedTotal);
+    const safeCount = Math.max(0, Math.floor(Number(contributorsCount) || 0));
     setData((prev) => {
       if (!prev) return prev;
       return {
         ...prev,
         items: prev.items.map((i) =>
-          i.id === itemId ? { ...i, reserved_total: reservedTotal, contributors_count: contributorsCount } : i
+          i.id === itemId ? { ...i, reserved_total: safeTotal, contributors_count: safeCount } : i
         ),
       };
     });
   }, []);
 
   useEffect(() => {
-    api<PublicWishlist>(`/api/public/wishlists/by-slug/${slug}`)
+    const safeSlug = typeof slug === "string" ? slug.trim() : "";
+    if (!safeSlug) {
+      setError("Неверная ссылка на список");
+      setLoading(false);
+      return;
+    }
+    api<PublicWishlist>(`/api/public/wishlists/by-slug/${encodeURIComponent(safeSlug)}`)
       .then(setData)
       .catch((err) => {
         console.error("Failed to load wishlist:", err);
         if (err instanceof Error) {
-          setError(err.message.includes("подключиться") ? err.message : `Ошибка: ${err.message}`);
+          setError(err.message.includes("подключиться") ? err.message : err.message);
         } else {
           setError("Список не найден или сервер недоступен");
         }
@@ -87,15 +95,16 @@ export default function PublicWishlistPage() {
 
   const contribute = async (item: PublicItem) => {
     if (!data) return;
-    const amount = parseFloat(contributeAmount.replace(",", "."));
+    const amount = Math.round(parseFloat(contributeAmount.replace(",", ".").replace(/\s/g, "")) * 100) / 100;
     if (isNaN(amount) || amount <= 0) {
-      toast.error("Введите сумму");
+      toast.error("Введите корректную сумму");
       return;
     }
     const price = item.price ?? 0;
-    const current = item.reserved_total;
-    if (price > 0 && current + amount > price) {
-      toast.error(`Можно добавить не больше ${(price - current).toFixed(0)} ₽`);
+    const current = Number(item.reserved_total) || 0;
+    const remainingAmount = price > 0 ? Math.max(0, price - current) : amount;
+    if (price > 0 && amount > remainingAmount) {
+      toast.error(`Можно добавить не больше ${remainingAmount.toFixed(0)} ₽`);
       return;
     }
     setSubmitting(true);
@@ -108,7 +117,9 @@ export default function PublicWishlistPage() {
           guest_name: guestName.trim() || undefined,
         }),
       });
-      applyWsUpdate(item.id, current + amount, item.contributors_count + 1);
+      const newTotal = Math.round((current + amount) * 100) / 100;
+      const newCount = (Number(item.contributors_count) || 0) + 1;
+      applyWsUpdate(item.id, newTotal, newCount);
       setReserveItem(null);
       setContributeAmount("");
       setGuestName("");
@@ -153,16 +164,17 @@ export default function PublicWishlistPage() {
   }
 
   const remaining = (item: PublicItem) => {
-    const p = item.price ?? 0;
+    const p = Number(item.price) ?? 0;
     if (p <= 0) return null;
-    return Math.max(0, p - item.reserved_total);
+    const reserved = Number(item.reserved_total) || 0;
+    return Math.max(0, p - reserved);
   };
 
   return (
     <div className="min-h-screen">
       <header className="border-b border-[var(--border)] bg-[var(--muted-soft)]">
         <div className="mx-auto max-w-2xl px-4 py-4">
-          <h1 className="text-2xl font-bold">{data.title}</h1>
+          <h1 className="text-2xl font-bold break-words">{data.title || "Список желаний"}</h1>
           {data.description && (
             <p className="mt-1 text-sm text-[var(--muted)]">{data.description}</p>
           )}
@@ -173,15 +185,17 @@ export default function PublicWishlistPage() {
       </header>
 
       <main className="mx-auto max-w-2xl px-4 py-6">
-        {data.items.length === 0 ? (
+        {!(Array.isArray(data.items) && data.items.length > 0) ? (
           <div className="rounded-2xl border border-dashed border-[var(--border)] p-8 text-center text-[var(--muted)]">
             В этом списке пока нет подарков.
           </div>
         ) : (
           <ul className="space-y-6">
-            {data.items.map((item) => {
+            {(data.items || []).map((item) => {
               const rem = remaining(item);
-              const isFullyReserved = (item.price ?? 0) > 0 && item.reserved_total >= (item.price ?? 0);
+              const priceNum = Number(item.price) ?? 0;
+              const reservedNum = Number(item.reserved_total) || 0;
+              const isFullyReserved = priceNum > 0 && reservedNum >= priceNum;
               const isReserveOpen = reserveItem?.id === item.id;
 
               return (
@@ -190,29 +204,35 @@ export default function PublicWishlistPage() {
                   className="rounded-xl border border-[var(--border)] bg-[var(--muted-soft)] overflow-hidden"
                 >
                   <div className="flex gap-4 p-4">
-                    {item.image_url && (
+                    {item.image_url ? (
                       <img
                         src={item.image_url}
                         alt=""
-                        className="h-24 w-24 rounded-lg object-cover flex-shrink-0"
+                        className="h-24 w-24 rounded-lg object-cover flex-shrink-0 bg-[var(--border)]"
+                        onError={(e) => {
+                          e.currentTarget.style.display = "none";
+                        }}
                       />
-                    )}
+                    ) : null}
                     <div className="flex-1 min-w-0">
-                      <h2 className="font-semibold">{item.title}</h2>
+                      <h2 className="font-semibold line-clamp-2 break-words">{item.title || "Без названия"}</h2>
                       <div className="mt-1.5 flex flex-wrap items-center gap-2">
                         {item.price != null && (
                           <>
                             <span className="inline-flex items-center rounded-full bg-[var(--border)] px-2.5 py-0.5 text-xs font-medium text-[var(--foreground)]">
                               {item.price.toFixed(0)} ₽
                             </span>
-                            {item.reserved_total > 0 && (
+                            {(Number(item.reserved_total) || 0) > 0 && (
                               <>
                                 <span className="inline-flex items-center rounded-full bg-[var(--primary-soft)] px-2.5 py-0.5 text-xs font-medium text-[var(--primary)]">
-                                  Собрано {item.reserved_total.toFixed(0)} ₽
+                                  Собрано {(Number(item.reserved_total) || 0).toFixed(0)} ₽
                                 </span>
-                                {item.contributors_count > 0 && (
+                                {(Number(item.contributors_count) || 0) > 0 && (
                                   <span className="inline-flex items-center rounded-full bg-[var(--muted-soft)] px-2.5 py-0.5 text-xs text-[var(--muted)]">
-                                    {item.contributors_count} {item.contributors_count === 1 ? "участник" : item.contributors_count < 5 ? "участника" : "участников"}
+                                    {(() => {
+                                      const c = Math.max(0, Math.floor(Number(item.contributors_count) || 0));
+                                      return `${c} ${c === 1 ? "участник" : c < 5 ? "участника" : "участников"}`;
+                                    })()}
                                   </span>
                                 )}
                               </>
@@ -239,7 +259,7 @@ export default function PublicWishlistPage() {
                           <div
                             className={`h-full rounded-full transition-[width] duration-500 ease-out ${isFullyReserved ? "bg-[var(--accent)]" : "bg-[var(--primary)]"}`}
                             style={{
-                              width: `${Math.min(100, (item.reserved_total / item.price) * 100)}%`,
+                              width: priceNum > 0 ? `${Math.min(100, (reservedNum / priceNum) * 100)}%` : "0%",
                             }}
                           />
                         </div>
