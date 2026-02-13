@@ -37,19 +37,23 @@ def _sign_pusher(string_to_sign: str, secret: str) -> str:
     ).hexdigest()
 
 
-@router.post("/auth")
+@router.post(
+    "/auth",
+    response_model=PusherAuthResponse,
+    summary="Pusher channel auth",
+    description="Authorize a Pusher private or presence channel subscription. Send form body: socket_id, channel_name, optional channel_data (presence). For private-* and presence-* channels send Authorization: Bearer <JWT>.",
+    responses={
+        200: {"description": "Auth string for Pusher JS"},
+        401: {"description": "Authentication required for private/presence channel"},
+        503: {"description": "Pusher not configured"},
+    },
+)
 async def pusher_auth(
-    socket_id: str = Form(..., min_length=1),
-    channel_name: str = Form(..., min_length=1),
-    channel_data: str | None = Form(None),
+    socket_id: str = Form(..., min_length=1, description="Pusher socket_id"),
+    channel_name: str = Form(..., min_length=1, description="Channel name (e.g. private-wishlist-123)"),
+    channel_data: str | None = Form(None, description="JSON string for presence channel_data"),
     user: User | None = Depends(get_current_user_optional),
-) -> dict[str, Any]:
-    """
-    Authorize a Pusher channel subscription (private or presence).
-    Pusher JS sends socket_id, channel_name (and channel_data for presence) as form body.
-    Requires JWT for private-* and presence-* channels.
-    Returns { "auth": "<key>:<signature>" } and optionally "channel_data" for presence.
-    """
+) -> PusherAuthResponse | PusherPresenceAuthResponse:
     settings = get_settings()
     if not settings.pusher_key or not settings.pusher_secret:
         raise HTTPException(
@@ -80,15 +84,15 @@ async def pusher_auth(
             # Presence: sign socket_id:channel_name:channel_data (channel_data is JSON string as sent by client)
             string_to_sign = f"{socket_id}:{channel_name}:{channel_data}"
             signature = _sign_pusher(string_to_sign, settings.pusher_secret)
-            return {
-                "auth": f"{settings.pusher_key}:{signature}",
-                "channel_data": channel_data,
-            }
+            return PusherPresenceAuthResponse(
+                auth=f"{settings.pusher_key}:{signature}",
+                channel_data=channel_data,
+            )
         else:
             # Private channel (or presence without channel_data - client should send it)
             string_to_sign = f"{socket_id}:{channel_name}"
             signature = _sign_pusher(string_to_sign, settings.pusher_secret)
-            return {"auth": f"{settings.pusher_key}:{signature}"}
+            return PusherAuthResponse(auth=f"{settings.pusher_key}:{signature}")
     except Exception as e:
         logger.warning("Pusher auth failed: %s", e)
         raise HTTPException(
