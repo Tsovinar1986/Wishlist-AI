@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
     "axios": "^1.7.9",
     "canvas-confetti": "^1.9.3",
     "next": "^16.1.6",
