@@ -47,8 +47,8 @@ export async function POST(request: NextRequest) {
   } catch (e) {
     console.error("Pusher auth proxy error:", e);
     return NextResponse.json(
-      { detail: "Failed to authorize channel" },
-      { status: 500 }
+      { detail: "Failed to authorize channel. Check backend (NEXT_PUBLIC_API_URL)." },
+      { status: 503 }
     );
   }
 }

@@ -12,6 +12,12 @@ export async function POST(request: NextRequest) {
       );
     }
     const backend = getBackendUrl();
+    if (process.env.NODE_ENV === "production" && (!backend || backend.includes("localhost"))) {
+      return NextResponse.json(
+        { error: "Backend not configured. Set NEXT_PUBLIC_API_URL in Vercel." },
+        { status: 503 }
+      );
+    }
     const registerRes = await fetch(`${backend}/api/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

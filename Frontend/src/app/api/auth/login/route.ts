@@ -12,6 +12,12 @@ export async function POST(request: NextRequest) {
       );
     }
     const backend = getBackendUrl();
+    if (process.env.NODE_ENV === "production" && (!backend || backend.includes("localhost"))) {
+      return NextResponse.json(
+        { error: "Backend not configured. Set NEXT_PUBLIC_API_URL in Vercel." },
+        { status: 503 }
+      );
+    }
     const res = await fetch(`${backend}/api/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -45,6 +51,9 @@ export async function POST(request: NextRequest) {
     return response;
   } catch (e) {
     console.error("Login API error:", e);
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Server error. Check NEXT_PUBLIC_API_URL and backend availability." },
+      { status: 500 }
+    );
   }
 }

@@ -27,23 +27,31 @@ type Wishlist = {
 };
 
 async function getMe(token: string): Promise<User | null> {
-  const backend = getBackendUrl();
-  const res = await fetch(`${backend}/api/users/me`, {
-    headers: { Authorization: `Bearer ${token}` },
-    cache: "no-store",
-  });
-  if (!res.ok) return null;
-  return res.json();
+  try {
+    const backend = getBackendUrl();
+    const res = await fetch(`${backend}/api/users/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    });
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
 }
 
 async function getWishlists(token: string): Promise<Wishlist[]> {
-  const backend = getBackendUrl();
-  const res = await fetch(`${backend}/api/wishlists`, {
-    headers: { Authorization: `Bearer ${token}` },
-    cache: "no-store",
-  });
-  if (!res.ok) return [];
-  return res.json();
+  try {
+    const backend = getBackendUrl();
+    const res = await fetch(`${backend}/api/wishlists`, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    });
+    if (!res.ok) return [];
+    return res.json();
+  } catch {
+    return [];
+  }
 }
 
 export default async function DashboardPage() {
