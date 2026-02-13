@@ -1,6 +1,49 @@
-# How to run locally (VS Code) and deploy on Vercel
+# How to run locally and redeploy everything
 
-## Running in VS Code (local)
+---
+
+## Quick run (local)
+
+1. **Backend:** `cd Backend && python -m venv .venv && source .venv/bin/activate` (Windows: `.venv\Scripts\activate`) → `pip install -r requirements.txt` → create `Backend/.env` with `DATABASE_URL`, `SECRET_KEY`, `CORS_ORIGINS=http://localhost:3000` → start PostgreSQL (or Docker, see below) → `uvicorn app.main:app --reload --host 0.0.0.0 --port 8000`
+2. **Frontend:** `cd Frontend && npm install` → create `Frontend/.env.local` with `NEXT_PUBLIC_API_URL=http://localhost:8000` → `npm run dev`
+3. Open **http://localhost:3000**. Backend creates DB tables on first start (no need to run `init_db` unless you prefer).
+
+---
+
+## Redeploy everything (Railway + Vercel)
+
+Do this when you’ve pushed code changes or need to refresh production.
+
+### 1. Push code
+
+```bash
+cd Wishlist-AI
+git add -A && git status
+git commit -m "Your message"   # if you have changes
+git push origin main
+```
+
+### 2. Redeploy Railway (backend)
+
+- Go to [railway.com](https://railway.com) → your project → **WISHLIST-AI** service.
+- **Deployments** tab: either wait for auto-deploy after push, or click **Deploy** / **Redeploy** (e.g. from the latest deployment’s ⋯ menu).
+- Ensure **Variables** include: `DATABASE_URL`, `SECRET_KEY`, `APP_ENV=production`, `CORS_ORIGINS=https://your-vercel-app.vercel.app`.
+- After deploy, copy the service **public URL** (e.g. `https://wishlist-ai-production.up.railway.app`) from **Settings → Networking → Generate Domain** if you don’t have one yet.
+
+### 3. Redeploy Vercel (frontend)
+
+- Go to [vercel.com](https://vercel.com) → your **wishlist-ai** project.
+- **Settings → Environment Variables**: set `NEXT_PUBLIC_API_URL` to your Railway backend URL (e.g. `https://wishlist-ai-production.up.railway.app`, no trailing slash). Save if you changed it.
+- **Deployments** → open the ⋯ menu on the latest deployment → **Redeploy**.
+- Wait until the new deployment is **Ready**.
+
+### 4. Check
+
+- Open your Vercel app URL → try **Register** or **Login**. If you see “Backend unavailable” or “Server problem”, check Railway logs (Deployments → View logs) and that `NEXT_PUBLIC_API_URL` on Vercel matches the Railway URL.
+
+---
+
+## Running in VS Code (local, detailed)
 
 ### Prerequisites
 
@@ -50,13 +93,11 @@ Start PostgreSQL (e.g. Docker):
 docker run -d --name wishlist-db -e POSTGRES_USER=wishlist -e POSTGRES_PASSWORD=wishlist -e POSTGRES_DB=wishlist_ai -p 5432:5432 postgres:16-alpine
 ```
 
-Create tables (from repo root):
+Create tables (optional — the backend also creates them on first start when you run uvicorn):
 
 ```bash
 cd Backend && source .venv/bin/activate && python -m scripts.init_db && cd ..
 ```
-
-(If you don’t have `scripts.init_db`, use your migration tool or create tables manually.)
 
 ### 4. Run Backend and Frontend in VS Code
 
@@ -168,9 +209,14 @@ In the Vercel project: **Settings → Environment Variables**. Add at least:
 
 ## Quick reference
 
-| Action              | Local (VS Code)                          | Vercel (Frontend)          |
+| Action              | Local (VS Code)                          | Production                 |
 |---------------------|------------------------------------------|-----------------------------|
-| Run backend         | `cd Backend && uvicorn app.main:app --reload --port 8000` | N/A (use another host)     |
-| Run frontend        | `cd Frontend && npm run dev`             | Automatic on push           |
-| Restart after .env  | Restart the corresponding terminal      | Redeploy or change env + Redeploy |
-| Build frontend      | `cd Frontend && npm run build`           | Automatic on deploy         |
+| Run backend         | `cd Backend && source .venv/bin/activate && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000` | Railway (auto on push or Redeploy) |
+| Run frontend        | `cd Frontend && npm run dev`             | Vercel (auto on push or Redeploy) |
+| Restart after .env  | Restart the corresponding terminal      | Change env in dashboard → Redeploy |
+| Redeploy all        | —                                        | 1) Push to `main` 2) Railway redeploy 3) Vercel → Redeploy |
+
+**Production URLs (your project):**
+
+- **Backend:** `https://wishlist-ai-production.up.railway.app` → set in Vercel as `NEXT_PUBLIC_API_URL`
+- **Frontend:** your Vercel URL (e.g. `https://wishlist-9vjc83uzc-tsovinar-babakhanyans-projects.vercel.app`) → set in Railway as `CORS_ORIGINS`

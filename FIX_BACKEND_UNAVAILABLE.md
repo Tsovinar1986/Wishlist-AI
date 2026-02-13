@@ -1,6 +1,6 @@
-# Fix "Backend unavailable. Try again later."
+# Fix "Backend unavailable" or "Server error"
 
-Follow these steps in order. You do them in **Railway** and **Vercel** (not in code).
+If you see **"Backend unavailable. Try again later."** or **"Server error"** / **"Server problem. Try again later."**, the frontend cannot use the backend. Follow these steps in order. You do them in **Railway** and **Vercel** (not in code).
 
 ---
 
@@ -71,9 +71,15 @@ If you add or change variables, Railway will redeploy.
 
 ---
 
+## If you still see "Server error" or "Server problem"
+
+- The backend is reachable but **returning 500** (crashed or DB error). In **Railway** → WISHLIST-AI → **Deployments** → **View logs** for the latest deployment. Check for:
+  - Missing or wrong **DATABASE_URL** (add a PostgreSQL service and copy its URL into Variables).
+  - Python/import errors — fix Root Directory = `Backend` or Dockerfile path = `Dockerfile.backend`.
+
 ## Done
 
-Open your Vercel app URL and try **Register** again. You should no longer see "Backend unavailable. Try again later."
+Open your Vercel app URL and try **Register** or **Login** again. You should no longer see "Backend unavailable" or "Server error."
 
 **Summary:**  
 Backend URL from Railway (Step 1.4) → into Vercel as `NEXT_PUBLIC_API_URL` (Step 2.1) → Redeploy Vercel (Step 2.2).

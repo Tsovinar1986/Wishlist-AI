@@ -3,6 +3,7 @@
 from functools import lru_cache
 from typing import List
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -18,8 +19,15 @@ class Settings(BaseSettings):
     secret_key: str = "change-me-in-production"
     debug: bool = True
 
-    # PostgreSQL async; set DATABASE_URL in env (postgresql+asyncpg://user:pass@host:5432/dbname)
+    # PostgreSQL async; set DATABASE_URL in env (postgresql+asyncpg://... or postgresql://... from Railway)
     database_url: str = "postgresql+asyncpg://user:password@localhost:5432/wishlist_ai"
+
+    @field_validator("database_url", mode="after")
+    @classmethod
+    def normalize_database_url(cls, v: str) -> str:
+        if v.startswith("postgresql://") and "+asyncpg" not in v:
+            return v.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return v
 
     jwt_algorithm: str = "HS256"
     jwt_access_token_expire_minutes: int = 60

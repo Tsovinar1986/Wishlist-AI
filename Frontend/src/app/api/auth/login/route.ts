@@ -29,11 +29,17 @@ export async function POST(request: NextRequest) {
     };
     if (!res.ok) {
       const raw = data.detail;
-      const errorMsg =
+      let errorMsg =
         typeof raw === "string" ? raw : Array.isArray(raw) ? raw[0] : undefined;
+      if (!errorMsg && res.status >= 500) {
+        errorMsg = "Server problem. Try again later.";
+      }
+      if (!errorMsg) {
+        errorMsg = "Login failed.";
+      }
       return NextResponse.json(
-        { error: errorMsg || "Login failed" },
-        { status: res.status }
+        { error: errorMsg },
+        { status: res.status >= 500 ? 502 : res.status }
       );
     }
     const access_token = data.access_token;
@@ -52,8 +58,8 @@ export async function POST(request: NextRequest) {
   } catch (e) {
     console.error("Login API error:", e);
     return NextResponse.json(
-      { error: "Server error. Check NEXT_PUBLIC_API_URL and backend availability." },
-      { status: 500 }
+      { error: "Backend unavailable. Try again later." },
+      { status: 503 }
     );
   }
 }

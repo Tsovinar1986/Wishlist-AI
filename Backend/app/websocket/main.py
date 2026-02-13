@@ -6,6 +6,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import get_settings
+from app.db.base import Base
+from app.db.session import engine
+from app.models import Item, Reservation, User, Wishlist  # noqa: F401 - register with Base.metadata
 from app.routers import auth, items, product, public, pusher_auth, reservations, users, wishlists, ws
 
 settings = get_settings()
@@ -13,6 +16,9 @@ settings = get_settings()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Create tables if missing (e.g. first deploy on Railway; idempotent)
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
     yield
 
 
