@@ -14,6 +14,7 @@ python-multipart==0.0.17
 
 # Config & env
 pydantic-settings==2.6.1
+email-validator==2.2.0
 
 # Optional: OAuth (ready for Google/GitHub)
 httpx==0.28.1

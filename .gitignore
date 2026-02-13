@@ -18,6 +18,7 @@ out/
 npm-debug.log*
 .yarn/
 .pnpm-store/
+*.tsbuildinfo
 
 # Build and cache
 *.log
