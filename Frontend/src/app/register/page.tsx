@@ -34,6 +34,10 @@ export default function RegisterPage() {
       toast.error("Пароль должен быть не короче 6 символов");
       return;
     }
+    if (password.length > 72) {
+      toast.error("Пароль не может быть длиннее 72 символов");
+      return;
+    }
     setLoading(true);
     try {
       const res = await fetch("/api/auth/register", {
@@ -105,7 +109,7 @@ export default function RegisterPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Пароль (не короче 6 символов)</Label>
+              <Label htmlFor="password">Пароль (6–72 символов)</Label>
               <Input
                 id="password"
                 type="password"
@@ -114,6 +118,7 @@ export default function RegisterPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
+                maxLength={72}
                 autoComplete="new-password"
               />
             </div>
